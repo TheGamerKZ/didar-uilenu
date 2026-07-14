@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Тойға шақыру</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Marck+Script&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     БЛОК НАСТРОЕК — измените здесь имена, дату, адрес и т.д.
+     Больше нигде в коде трогать не нужно.
+     ============================================================ */
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ======================================================================
+   ⚙️  НАСТРОЙКИ ПРИГЛАШЕНИЯ — редактируйте только этот объект
+   ====================================================================== */
+const CONFIG = {
+  // Имена молодожёнов
+  groomName: "Дидар",
+  brideName: "Алина",
+
+  // Дата и время тоя
+  weddingDateISO: "2026-08-20T19:00:00",   // ГГГГ-ММ-ДДTЧЧ:ММ:СС — используется для таймера и календаря
+  weddingDateDisplay: "20.08.2026",
+  startTimeDisplay: "20:00",
+
+  // Родители / хозяева тоя
+  hostsLabel: "Той иелері:",
+  hostsNames: "Асқар және Гүлнара",
+
+  // Текст приглашения гостям
+  invitationTitle: "Құрметті қонақтар!",
+  invitationText: "Сіздерді ұлымыз Дидар мен келініміз Алинаныӊ үйлену тойына арналған ақ дастарханымыздың қадірлі қонағы болуға шақырамыз! Қуанышымызға ортақ болыңыздар!",
+
+  // Место проведения
+  venueName: '"Ак сарай" тойханасы',
+  venueAddress: "Түркістан облысы, Сайрам ауданы, Манкент ауылы, Айнабұлақ көшесі, 179/1",
+  mapLink: "https://2gis.kz/shymkent/firm/70000001091687160?m=69.867424%2C42.398575%2F14.75",
+
+  // RSVP
+  rsvpDeadlineDisplay: "01.09.2026",
+  rsvpDeadlineNote: "дейін жауап беруіңізді сұраймыз",
+
+  // Прощальная фраза внизу
+  farewellText: "Кездескенше!",
+
+  // Фоновая мелодия (необязательно) — оставьте "" чтобы убрать кнопку музыки
+  musicUrl: "",
+
+  // ФОТОГРАФИИ — вставьте сюда ссылку на своё фото (можно загрузить на imgur.com,
+  // google drive (с публичным доступом) или любой другой хостинг и вставить ссылку).
+  // Если оставить "", вместо фото будет красивая орнаментальная заглушка.
+  heroPhotoUrl: ""               // главное фото на самом верху страницы
+};
+/* ====================================================================== */
+
+const app = document.getElementById('app');
+app.innerHTML = `
+<style>
+  :root{
+    --cream:#FBF6EC;
+    --cream-deep:#F3E9D4;
+    --ink:#2B2320;
+    --ink-soft:#6b5d4f;
+    --gold:#B8892E;
+    --gold-light:#D8B463;
+    --maroon:#7A2331;
+    --line:#E4D8C0;
+    --serif: 'Cormorant Garamond', serif;
+    --script: 'Marck Script', cursive;
+    --sans: 'Manrope', sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--cream); color:var(--ink); font-family:var(--sans); overflow-x:hidden;}
+  .wrap{max-width:560px; margin:0 auto; position:relative; overflow:hidden; box-shadow:0 0 60px rgba(0,0,0,.06);}
+
+  /* ---------- Scroll reveal ---------- */
+  .reveal{opacity:0; transform:translateY(28px); transition:opacity .9s ease, transform .9s ease;}
+  .reveal.visible{opacity:1; transform:translateY(0);}
+  .reveal.r-scale{transform:translateY(0) scale(.92);}
+  .reveal.r-scale.visible{transform:scale(1);}
+  .reveal-stagger.visible > *{opacity:1; transform:none;}
+  .reveal-stagger > *{opacity:0; transform:translateY(18px); transition:opacity .7s ease, transform .7s ease;}
+  .reveal-stagger.visible > *:nth-child(1){transition-delay:.05s;}
+  .reveal-stagger.visible > *:nth-child(2){transition-delay:.16s;}
+  .reveal-stagger.visible > *:nth-child(3){transition-delay:.27s;}
+  .reveal-stagger.visible > *:nth-child(4){transition-delay:.38s;}
+  .reveal-stagger.visible > *:nth-child(5){transition-delay:.49s;}
+  .reveal-stagger.visible > *:nth-child(6){transition-delay:.6s;}
+
+  /* ---------- Ornament (qoshqar-muyiz motif) ---------- */
+  .ornament{display:flex; justify-content:center; align-items:center; margin:28px 0; opacity:.9;}
+  .ornament svg{width:150px; height:36px;}
+  .corner-orn{position:absolute; width:60px; height:60px; opacity:.7; z-index:2;}
+  .corner-orn.tl{top:16px; left:16px;}
+  .corner-orn.tr{top:16px; right:16px; transform:scaleX(-1);}
+  .corner-orn.bl{bottom:16px; left:16px; transform:scaleY(-1);}
+  .corner-orn.br{bottom:16px; right:16px; transform:scale(-1,-1);}
+  .bg-pattern{
+    position:absolute; inset:0; pointer-events:none; opacity:.05; z-index:0;
+    background-image:radial-gradient(circle, var(--gold) 1.4px, transparent 1.6px);
+    background-size:26px 26px;
+  }
+
+  /* ---------- Hero ---------- */
+  .hero{
+    position:relative;
+    padding:0;
+    text-align:center;
+    overflow:hidden;
+    border-bottom:1px solid var(--line);
+  }
+  .hero-photo{
+    position:relative; width:100%; height:340px; overflow:hidden;
+    background:
+      radial-gradient(circle at 30% 20%, var(--cream-deep) 0%, transparent 55%),
+      radial-gradient(circle at 75% 75%, #EFDFC0 0%, transparent 50%),
+      linear-gradient(160deg, var(--cream-deep), var(--cream) 70%);
+  }
+  .hero-photo img{
+    position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    filter:saturate(.92);
+  }
+  .hero-photo .ph-frame-icon{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  }
+  .hero-photo::after{
+    content:""; position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(43,35,32,0) 45%, var(--cream) 96%);
+  }
+  .hero-body{
+    position:relative; padding:26px 28px 56px; margin-top:-46px;
+  }
+  .eyebrow{
+    font-family:var(--sans); font-size:12px; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--maroon); font-weight:600; margin-bottom:18px;
+  }
+  .names{
+    font-family:var(--serif);
+    font-size:56px; line-height:1.05; font-weight:500;
+    color:var(--ink);
+  }
+  .names .amp{
+    display:block; font-family:var(--script); color:var(--gold); font-size:34px; margin:6px 0;
+  }
+  .wed-date{
+    margin-top:22px; font-family:var(--sans); font-size:15px; letter-spacing:.12em;
+    color:var(--ink-soft);
+  }
+
+  /* ---------- Start time ---------- */
+  .start-time{
+    font-family:var(--serif); font-size:52px; font-weight:600; color:var(--maroon);
+    letter-spacing:.06em; margin-top:6px;
+  }
+
+  /* ---------- Sections ---------- */
+  section{padding:48px 28px; text-align:center; position:relative;}
+  section + section{border-top:1px solid var(--line);}
+  h2{
+    font-family:var(--serif); font-weight:600; font-size:26px; margin-bottom:16px; color:var(--maroon);
+  }
+  h3{ font-family:var(--serif); font-weight:600; font-size:20px; margin:6px 0 14px;}
+  p{ font-family:var(--sans); font-size:15px; line-height:1.7; color:var(--ink-soft); max-width:420px; margin:0 auto;}
+
+  .hosts-label{font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); margin-top:26px;}
+  .hosts-names{font-family:var(--serif); font-size:22px; margin-top:6px; color:var(--ink);}
+
+  /* ---------- Countdown ---------- */
+  .countdown{display:flex; justify-content:center; gap:14px; margin-top:8px; flex-wrap:wrap;}
+  .cd-box{
+    background:#fff; border:1px solid var(--line); border-radius:10px;
+    min-width:76px; padding:16px 10px;
+  }
+  .cd-num{font-family:var(--serif); font-size:32px; color:var(--maroon); font-weight:600;}
+  .cd-label{font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); margin-top:4px;}
+
+  /* ---------- Calendar ---------- */
+  .cal{max-width:320px; margin:20px auto 0; background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px;}
+  .cal-month{font-family:var(--serif); font-size:18px; margin-bottom:12px; color:var(--ink);}
+  .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; font-size:12px;}
+  .cal-grid .dow{color:var(--ink-soft); font-weight:600; padding-bottom:4px;}
+  .cal-grid .day{padding:6px 0; border-radius:6px; color:var(--ink);}
+  .cal-grid .day.empty{visibility:hidden;}
+  .cal-grid .day.marked{background:var(--maroon); color:#fff; font-weight:700;}
+  .cal-time{margin-top:16px; font-family:var(--serif); font-size:22px; color:var(--gold); letter-spacing:.04em;}
+
+  /* ---------- Venue ---------- */
+  .map-btn{
+    display:inline-block; margin-top:18px; padding:12px 28px;
+    border:1px solid var(--maroon); color:var(--maroon); text-decoration:none;
+    font-size:13px; letter-spacing:.08em; text-transform:uppercase; border-radius:30px;
+    transition:background .2s, color .2s;
+  }
+  .map-btn:hover{background:var(--maroon); color:#fff;}
+
+  /* ---------- RSVP ---------- */
+  .rsvp-note{font-size:13px; color:var(--gold); margin-bottom:22px; letter-spacing:.02em;}
+  .choice-row{display:flex; gap:12px; justify-content:center; margin-bottom:20px; flex-wrap:wrap;}
+  .choice-btn{
+    padding:12px 22px; border:1px solid var(--line); background:#fff; border-radius:30px;
+    font-family:var(--sans); font-size:14px; cursor:pointer; color:var(--ink); transition:.2s;
+  }
+  .choice-btn.active{background:var(--maroon); border-color:var(--maroon); color:#fff;}
+  .guest-row{display:flex; gap:10px; justify-content:center; margin-bottom:20px;}
+  .guest-btn{
+    width:40px; height:40px; border-radius:50%; border:1px solid var(--line); background:#fff;
+    font-family:var(--serif); font-size:16px; cursor:pointer;
+  }
+  .guest-btn.active{background:var(--gold); border-color:var(--gold); color:#fff;}
+  .field{max-width:340px; margin:0 auto 14px; text-align:left;}
+  .field label{font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); display:block; margin-bottom:6px;}
+  .field input{
+    width:100%; padding:11px 14px; border:1px solid var(--line); border-radius:8px;
+    font-family:var(--sans); font-size:14px; background:#fff; color:var(--ink);
+  }
+  .field input:focus{outline:2px solid var(--gold-light); outline-offset:1px;}
+  .submit-btn{
+    margin-top:8px; padding:13px 40px; background:var(--maroon); color:#fff; border:none;
+    border-radius:30px; font-family:var(--sans); font-size:14px; letter-spacing:.06em; text-transform:uppercase;
+    cursor:pointer; transition:opacity .2s;
+  }
+  .submit-btn:hover{opacity:.88;}
+  .thanks{display:none; font-family:var(--serif); font-size:20px; color:var(--maroon); margin-top:10px;}
+
+  /* ---------- Footer ---------- */
+  .footer{padding:56px 28px 44px; text-align:center; background:var(--cream-deep);}
+  .footer .names{font-size:38px;}
+  .footer .farewell{font-family:var(--script); font-size:26px; color:var(--gold); margin-top:10px;}
+  .footer .made{margin-top:30px; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-soft);}
+
+  @media(max-width:420px){
+    .names{font-size:42px;}
+    .footer .names{font-size:30px;}
+  }
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+</style>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-photo">
+      ${CONFIG.heroPhotoUrl
+        ? `<img src="${CONFIG.heroPhotoUrl}" alt="${CONFIG.groomName} & ${CONFIG.brideName}">`
+        : `<div class="ph-frame-icon">${heartOrnamentSVG()}</div>`}
+    </div>
+    <div class="hero-body">
+      <div class="eyebrow reveal">Үйлену тойына шақыру</div>
+      <div class="names reveal r-scale">${CONFIG.groomName}<span class="amp">&amp;</span>${CONFIG.brideName}</div>
+      <div class="wed-date reveal">${CONFIG.weddingDateDisplay}</div>
+      <div class="ornament reveal">${ornamentSVG()}</div>
+    </div>
+  </div>
+
+  <!-- INVITATION -->
+  <section>
+    <div class="bg-pattern"></div>
+    <div class="reveal">
+      <h2>${CONFIG.invitationTitle}</h2>
+      <p>${CONFIG.invitationText}</p>
+      <div class="hosts-label">${CONFIG.hostsLabel}</div>
+      <div class="hosts-names">${CONFIG.hostsNames}</div>
+    </div>
+  </section>
+
+  <!-- START TIME -->
+  <section>
+    <div class="reveal">
+      <h3>Басталу уақыты</h3>
+      <div class="start-time">${CONFIG.startTimeDisplay}</div>
+    </div>
+  </section>
+
+  <!-- COUNTDOWN -->
+  <section>
+    <div class="reveal">
+      <h3>Тойға қалды</h3>
+      <div class="countdown">
+        <div class="cd-box"><div class="cd-num" id="cd-days">00</div><div class="cd-label">Күн</div></div>
+        <div class="cd-box"><div class="cd-num" id="cd-hours">00</div><div class="cd-label">Сағат</div></div>
+        <div class="cd-box"><div class="cd-num" id="cd-mins">00</div><div class="cd-label">Минут</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CALENDAR -->
+  <section>
+    <div class="cal reveal r-scale" id="calendar"></div>
+  </section>
+
+  <!-- VENUE -->
+  <section>
+    <div class="reveal">
+      <h2>Мекенжайымыз</h2>
+      <h3>${CONFIG.venueName}</h3>
+      <p>${CONFIG.venueAddress}</p>
+      <a class="map-btn" href="${CONFIG.mapLink}" target="_blank" rel="noopener">Картадан көрсету</a>
+    </div>
+  </section>
+
+  <!-- RSVP -->
+  <section>
+    <div class="reveal">
+    <h2>Тойымызға қатысасыз ба?</h2>
+    <div class="rsvp-note">${CONFIG.rsvpDeadlineDisplay} ${CONFIG.rsvpDeadlineNote}</div>
+
+    <div class="choice-row" id="choiceRow">
+      <button class="choice-btn" data-val="yes">Иә</button>
+      <button class="choice-btn" data-val="pair">Жұбайыммен бірге</button>
+      <button class="choice-btn" data-val="no">Жоқ</button>
+    </div>
+
+    <div id="guestBlock" style="display:none;">
+      <p style="margin-bottom:10px;">Неше адам келеді?</p>
+      <div class="guest-row" id="guestRow">
+        <button class="guest-btn" data-n="1">1</button>
+        <button class="guest-btn" data-n="2">2</button>
+        <button class="guest-btn" data-n="3">3</button>
+        <button class="guest-btn" data-n="4">4</button>
+      </div>
+    </div>
+
+    <div class="field"><label>Аты-жөніңіз</label><input id="rsvpName" type="text" placeholder="Аты-жөніңізді жазыңыз"></div>
+    <div class="field"><label>Телефон нөміріңіз</label><input id="rsvpPhone" type="tel" placeholder="+7 ___ ___ __ __"></div>
+
+    <button class="submit-btn" id="rsvpSubmit">Жауапты жіберу</button>
+    <div class="thanks" id="rsvpThanks">Жауабыңызға рахмет! 🤍</div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="reveal">
+      <div class="names">${CONFIG.groomName} &amp; ${CONFIG.brideName}</div>
+      <div class="farewell">${CONFIG.farewellText}</div>
+      <div class="wed-date" style="margin-top:8px;">${CONFIG.weddingDateDisplay}</div>
+      <div class="made">Made with love for you</div>
+    </div>
+  </div>
+
+</div>
+`;
+
+/* ---------- Ornament SVG (qoshqar-muyiz inspired) ---------- */
+function ornamentSVG(){
+  return `<svg viewBox="0 0 200 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M100 20 C 92 4, 70 4, 66 18 C 63 28, 74 32, 80 24 C 84 18, 78 14, 74 18" stroke="#B8892E" stroke-width="1.6" stroke-linecap="round"/>
+    <path d="M100 20 C 108 4, 130 4, 134 18 C 137 28, 126 32, 120 24 C 116 18, 122 14, 126 18" stroke="#B8892E" stroke-width="1.6" stroke-linecap="round"/>
+    <line x1="0" y1="20" x2="55" y2="20" stroke="#D8B463" stroke-width="1"/>
+    <line x1="145" y1="20" x2="200" y2="20" stroke="#D8B463" stroke-width="1"/>
+    <circle cx="100" cy="20" r="3.5" fill="#7A2331"/>
+  </svg>`;
+}
+
+/* ---------- Photo placeholder ornaments ---------- */
+function heartOrnamentSVG(){
+  return `<svg width="90" height="90" viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="45" cy="45" r="43" stroke="#D8B463" stroke-width="1.2" stroke-dasharray="2 5"/>
+    <path d="M45 60 C 30 48, 22 38, 22 29 C 22 20, 30 15, 37 20 C 40 22, 43 26, 45 30 C 47 26, 50 22, 53 20 C 60 15, 68 20, 68 29 C 68 38, 60 48, 45 60 Z"
+      stroke="#B8892E" stroke-width="1.6" fill="none"/>
+  </svg>`;
+}
+
+/* ---------- Countdown ---------- */
+function updateCountdown(){
+  const target = new Date(CONFIG.weddingDateISO).getTime();
+  const now = new Date().getTime();
+  let diff = target - now;
+  if(diff < 0) diff = 0;
+  const days = Math.floor(diff/(1000*60*60*24));
+  const hours = Math.floor((diff/(1000*60*60))%24);
+  const mins = Math.floor((diff/(1000*60))%60);
+  document.getElementById('cd-days').textContent = String(days).padStart(2,'0');
+  document.getElementById('cd-hours').textContent = String(hours).padStart(2,'0');
+  document.getElementById('cd-mins').textContent = String(mins).padStart(2,'0');
+}
+updateCountdown();
+setInterval(updateCountdown, 30000);
+
+/* ---------- Calendar ---------- */
+function buildCalendar(){
+  const d = new Date(CONFIG.weddingDateISO);
+  const year = d.getFullYear();
+  const month = d.getMonth();
+  const targetDate = d.getDate();
+  const monthNames = ["Қаңтар","Ақпан","Наурыз","Сәуір","Мамыр","Маусым","Шілде","Тамыз","Қыркүйек","Қазан","Қараша","Желтоқсан"];
+  const firstDay = new Date(year, month, 1);
+  let startOffset = firstDay.getDay(); // 0=Sun
+  startOffset = (startOffset === 0) ? 6 : startOffset - 1; // make Monday=0
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+
+  let html = `<div class="cal-month">${monthNames[month]} ${year}</div><div class="cal-grid">`;
+  ["Дс","Сс","Ср","Бс","Жм","Сн","Жс"].forEach(dow=>{ html += `<div class="dow">${dow}</div>`; });
+  for(let i=0;i<startOffset;i++){ html += `<div class="day empty"></div>`; }
+  for(let day=1; day<=daysInMonth; day++){
+    const marked = (day === targetDate) ? 'marked' : '';
+    html += `<div class="day ${marked}">${day}</div>`;
+  }
+  html += `</div><div class="cal-time">${CONFIG.startTimeDisplay}</div>`;
+  document.getElementById('calendar').innerHTML = html;
+}
+buildCalendar();
+
+/* ---------- RSVP interactions ---------- */
+let chosenAnswer = null;
+let chosenGuests = null;
+
+document.getElementById('choiceRow').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.choice-btn');
+  if(!btn) return;
+  document.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  chosenAnswer = btn.dataset.val;
+  document.getElementById('guestBlock').style.display = (chosenAnswer === 'no') ? 'none' : 'block';
+});
+
+document.getElementById('guestRow').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.guest-btn');
+  if(!btn) return;
+  document.querySelectorAll('.guest-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  chosenGuests = btn.dataset.n;
+});
+
+document.getElementById('rsvpSubmit').addEventListener('click', ()=>{
+  const name = document.getElementById('rsvpName').value.trim();
+  if(!chosenAnswer){ alert('Жауап нұсқасын таңдауыңызды сұраймыз'); return; }
+  if(!name){ alert('Аты-жөніңізді жазыңызшы'); return; }
+  document.getElementById('rsvpThanks').style.display = 'block';
+  document.getElementById('rsvpSubmit').style.display = 'none';
+});
+
+/* ---------- Плавное появление блоков при прокрутке ---------- */
+const revealObserver = new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){
+      entry.target.classList.add('visible');
+      revealObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.reveal, .reveal-stagger').forEach(el=>{
+  revealObserver.observe(el);
+});
+</script>
+</body>
+</html>
