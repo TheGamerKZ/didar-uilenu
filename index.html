@@ -43,10 +43,6 @@ const CONFIG = {
   venueAddress: "Түркістан облысы, Сайрам ауданы, Манкент ауылы, Айнабұлақ көшесі, 179/1",
   mapLink: "https://2gis.kz/shymkent/firm/70000001091687160?m=69.867424%2C42.398575%2F14.75",
 
-  // RSVP
-  rsvpDeadlineDisplay: "01.09.2026",
-  rsvpDeadlineNote: "дейін жауап беруіңізді сұраймыз",
-
   // Прощальная фраза внизу
   farewellText: "Кездескенше!",
 
@@ -201,35 +197,6 @@ app.innerHTML = `
   }
   .map-btn:hover{background:var(--maroon); color:#fff;}
 
-  /* ---------- RSVP ---------- */
-  .rsvp-note{font-size:13px; color:var(--gold); margin-bottom:22px; letter-spacing:.02em;}
-  .choice-row{display:flex; gap:12px; justify-content:center; margin-bottom:20px; flex-wrap:wrap;}
-  .choice-btn{
-    padding:12px 22px; border:1px solid var(--line); background:#fff; border-radius:30px;
-    font-family:var(--sans); font-size:14px; cursor:pointer; color:var(--ink); transition:.2s;
-  }
-  .choice-btn.active{background:var(--maroon); border-color:var(--maroon); color:#fff;}
-  .guest-row{display:flex; gap:10px; justify-content:center; margin-bottom:20px;}
-  .guest-btn{
-    width:40px; height:40px; border-radius:50%; border:1px solid var(--line); background:#fff;
-    font-family:var(--serif); font-size:16px; cursor:pointer;
-  }
-  .guest-btn.active{background:var(--gold); border-color:var(--gold); color:#fff;}
-  .field{max-width:340px; margin:0 auto 14px; text-align:left;}
-  .field label{font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); display:block; margin-bottom:6px;}
-  .field input{
-    width:100%; padding:11px 14px; border:1px solid var(--line); border-radius:8px;
-    font-family:var(--sans); font-size:14px; background:#fff; color:var(--ink);
-  }
-  .field input:focus{outline:2px solid var(--gold-light); outline-offset:1px;}
-  .submit-btn{
-    margin-top:8px; padding:13px 40px; background:var(--maroon); color:#fff; border:none;
-    border-radius:30px; font-family:var(--sans); font-size:14px; letter-spacing:.06em; text-transform:uppercase;
-    cursor:pointer; transition:opacity .2s;
-  }
-  .submit-btn:hover{opacity:.88;}
-  .thanks{display:none; font-family:var(--serif); font-size:20px; color:var(--maroon); margin-top:10px;}
-
   /* ---------- Footer ---------- */
   .footer{padding:56px 28px 44px; text-align:center; background:var(--cream-deep);}
   .footer .names{font-size:38px;}
@@ -306,36 +273,6 @@ app.innerHTML = `
     </div>
   </section>
 
-  <!-- RSVP -->
-  <section>
-    <div class="reveal">
-    <h2>Тойымызға қатысасыз ба?</h2>
-    <div class="rsvp-note">${CONFIG.rsvpDeadlineDisplay} ${CONFIG.rsvpDeadlineNote}</div>
-
-    <div class="choice-row" id="choiceRow">
-      <button class="choice-btn" data-val="yes">Иә</button>
-      <button class="choice-btn" data-val="pair">Жұбайыммен бірге</button>
-      <button class="choice-btn" data-val="no">Жоқ</button>
-    </div>
-
-    <div id="guestBlock" style="display:none;">
-      <p style="margin-bottom:10px;">Неше адам келеді?</p>
-      <div class="guest-row" id="guestRow">
-        <button class="guest-btn" data-n="1">1</button>
-        <button class="guest-btn" data-n="2">2</button>
-        <button class="guest-btn" data-n="3">3</button>
-        <button class="guest-btn" data-n="4">4</button>
-      </div>
-    </div>
-
-    <div class="field"><label>Аты-жөніңіз</label><input id="rsvpName" type="text" placeholder="Аты-жөніңізді жазыңыз"></div>
-    <div class="field"><label>Телефон нөміріңіз</label><input id="rsvpPhone" type="tel" placeholder="+7 ___ ___ __ __"></div>
-
-    <button class="submit-btn" id="rsvpSubmit">Жауапты жіберу</button>
-    <div class="thanks" id="rsvpThanks">Жауабыңызға рахмет! 🤍</div>
-    </div>
-  </section>
-
   <!-- FOOTER -->
   <div class="footer">
     <div class="reveal">
@@ -408,35 +345,6 @@ function buildCalendar(){
   document.getElementById('calendar').innerHTML = html;
 }
 buildCalendar();
-
-/* ---------- RSVP interactions ---------- */
-let chosenAnswer = null;
-let chosenGuests = null;
-
-document.getElementById('choiceRow').addEventListener('click', (e)=>{
-  const btn = e.target.closest('.choice-btn');
-  if(!btn) return;
-  document.querySelectorAll('.choice-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  chosenAnswer = btn.dataset.val;
-  document.getElementById('guestBlock').style.display = (chosenAnswer === 'no') ? 'none' : 'block';
-});
-
-document.getElementById('guestRow').addEventListener('click', (e)=>{
-  const btn = e.target.closest('.guest-btn');
-  if(!btn) return;
-  document.querySelectorAll('.guest-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  chosenGuests = btn.dataset.n;
-});
-
-document.getElementById('rsvpSubmit').addEventListener('click', ()=>{
-  const name = document.getElementById('rsvpName').value.trim();
-  if(!chosenAnswer){ alert('Жауап нұсқасын таңдауыңызды сұраймыз'); return; }
-  if(!name){ alert('Аты-жөніңізді жазыңызшы'); return; }
-  document.getElementById('rsvpThanks').style.display = 'block';
-  document.getElementById('rsvpSubmit').style.display = 'none';
-});
 
 /* ---------- Плавное появление блоков при прокрутке ---------- */
 const revealObserver = new IntersectionObserver((entries)=>{
