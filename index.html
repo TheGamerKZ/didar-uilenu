@@ -28,7 +28,7 @@ const CONFIG = {
   // Программа тоя
   events: [
     { label: { kz: "Беташар", ru: "Беташар" }, time: "18:00" },
-    { label: { kz: "Той",     ru: "Той"     }, time: "19:00" }
+    { label: { kz: "Той",      ru: "Той"     }, time: "19:00" }
   ],
 
   // Родители / хозяева тоя
@@ -54,9 +54,9 @@ const CONFIG = {
   // google drive (с публичным доступом) или любой другой хостинг и вставить ссылку).
   // Если оставить "", вместо фото будет красивая орнаментальная заглушка.
   heroPhotoUrl : "hero.jpeg",
-   midPhotoUrl: "middle.jpeg",
-   bottomPhotoUrl: "bottom.jpeg",
-   musicUrl: "music.mp3"
+  midPhotoUrl: "middle.jpeg",
+  bottomPhotoUrl: "bottom.jpeg",
+  musicUrl: "music.mp3"
 };
 
 /* ======================================================================
@@ -90,6 +90,7 @@ const UI = {
 let currentLang = "kz";
 let countdownInterval = null;
 let revealObserver = null;
+let isMusicPlaying = false; // Храним глобальное состояние воспроизведения
 
 /* ---------- Ornament SVGs ---------- */
 function ornamentSVG(){
@@ -243,26 +244,26 @@ function renderApp(lang, opts){
   @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
 
   .music-btn{
-  position:fixed; bottom:20px; right:20px; z-index:100;
-  width:52px; height:52px; border-radius:50%; border:1px solid var(--line);
-  background:rgba(255,255,255,.85); backdrop-filter:blur(6px);
-  box-shadow:0 4px 16px rgba(43,35,32,.18);
-  display:flex; align-items:center; justify-content:center;
-  cursor:pointer; transition:transform .2s, background .2s;
-   }
-   .music-btn:hover{transform:scale(1.06);}
-   .music-btn svg{width:22px; height:22px;}
-   .music-btn .bar{transform-origin:bottom; transition:transform .3s ease;}
-   .music-btn.playing .bar{animation:musicBar 0.9s ease-in-out infinite;}
-   .music-btn.playing .bar:nth-child(2){animation-delay:.15s;}
-   .music-btn.playing .bar:nth-child(3){animation-delay:.3s;}
-   @keyframes musicBar{
-   0%,100%{transform:scaleY(.4);}
-   50%{transform:scaleY(1);}
-   }
-   @media(max-width:420px){
-   .music-btn{bottom:16px; right:16px; width:46px; height:46px;}
-   }
+    position:fixed; bottom:20px; right:20px; z-index:100;
+    width:52px; height:52px; border-radius:50%; border:1px solid var(--line);
+    background:rgba(255,255,255,.85); backdrop-filter:blur(6px);
+    box-shadow:0 4px 16px rgba(43,35,32,.18);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; transition:transform .2s, background .2s;
+  }
+  .music-btn:hover{transform:scale(1.06);}
+  .music-btn svg{width:22px; height:22px;}
+  .music-btn .bar{transform-origin:bottom; transition:transform .3s ease;}
+  .music-btn.playing .bar{animation:musicBar 0.9s ease-in-out infinite;}
+  .music-btn.playing .bar:nth-child(2){animation-delay:.15s;}
+  .music-btn.playing .bar:nth-child(3){animation-delay:.3s;}
+  @keyframes musicBar{
+    0%,100%{transform:scaleY(.4);}
+    50%{transform:scaleY(1);}
+  }
+  @media(max-width:420px){
+    .music-btn{bottom:16px; right:16px; width:46px; height:46px;}
+  }
   
 </style>
 
@@ -271,14 +272,14 @@ function renderApp(lang, opts){
   <button class="lang-btn ${lang==='ru'?'active':''}" data-lang="ru">РУС</button>
 </div>
 
-<button class="music-btn" id="musicBtn" aria-label="Toggle music">
+<button class="music-btn ${isMusicPlaying ? 'playing' : ''}" id="musicBtn" aria-label="Toggle music">
   <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <rect class="bar" x="5"  y="9"  width="3" height="8" rx="1.5" fill="#7A2331"/>
     <rect class="bar" x="10.5" y="4" width="3" height="16" rx="1.5" fill="#7A2331"/>
     <rect class="bar" x="16" y="9"  width="3" height="8" rx="1.5" fill="#7A2331"/>
   </svg>
 </button>
-<audio id="bgMusic" src="" loop preload="none"></audio>
+<audio id="bgMusic" src="${CONFIG.musicUrl || ''}" loop preload="auto"></audio>
 
 <div class="wrap page-fade" id="pageWrap">
 
@@ -309,7 +310,7 @@ function renderApp(lang, opts){
   </section>
 
   <!-- PHOTO: middle -->
-  <section style="padding-top:10;">
+  <section style="padding-top:10px;">
     <div class="photo-panel reveal r-scale">
       ${CONFIG.midPhotoUrl
         ? `<img src="${CONFIG.midPhotoUrl}" alt="${CONFIG.groomName} & ${CONFIG.brideName}">`
@@ -384,6 +385,7 @@ function renderApp(lang, opts){
   startCountdown();
   attachLangSwitch();
   setupReveal(opts.skipAnimation);
+  setupMusic(); // <--- Перенесли сюда! Вызывается сразу ПОСЛЕ генерации DOM-элементов
 }
 
 /* ---------- Calendar ---------- */
@@ -467,35 +469,40 @@ function attachLangSwitch(){
   });
 }
 
-/* ---------- Music toggle (default OFF) ---------- */
+/* ---------- Music control ---------- */
 function setupMusic(){
   const btn = document.getElementById('musicBtn');
   const audio = document.getElementById('bgMusic');
   if(!btn || !audio) return;
 
-  if(CONFIG.musicUrl && !audio.src){
-    audio.src = CONFIG.musicUrl;
+  // Если музыка уже должна играть (например, после переключения языка)
+  if(isMusicPlaying){
+    audio.play().then(() => {
+      btn.classList.add('playing');
+    }).catch(() => {
+      isMusicPlaying = false;
+      btn.classList.remove('playing');
+    });
   }
 
-  let playing = false; // выключено по умолчанию при заходе
-
   btn.addEventListener('click', ()=>{
-    if(!playing){
+    if(!isMusicPlaying){
       audio.play().then(()=>{
-        playing = true;
+        isMusicPlaying = true;
         btn.classList.add('playing');
-      }).catch(()=>{ /* браузер может заблокировать без взаимодействия — но клик это взаимодействие */ });
+      }).catch(err=>{ 
+        console.log("Браузер заблокировал автовоспроизведение, но клик должен это исправить:", err); 
+      });
     } else {
       audio.pause();
-      playing = false;
+      isMusicPlaying = false;
       btn.classList.remove('playing');
     }
   });
 }
    
 /* ---------- Init ---------- */
-setupMusic();
-renderApp(currentLang);
+renderApp(currentLang); // Запускаем приложение (оно само внутри вызовет setupMusic)
 </script>
 </body>
 </html>
